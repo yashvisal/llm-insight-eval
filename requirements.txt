@@ -22,3 +22,5 @@ asyncio-mqtt>=0.16.0
 loguru>=0.7.0
 # For configuration management
 pyyaml>=6.0.0
+# For E2B Data Analysis Tool
+e2b>=0.12.0
