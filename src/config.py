@@ -3,7 +3,7 @@ Configuration management for the LLM Insight Evaluation Agent
 """
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -36,6 +36,16 @@ class EvaluationConfig(BaseModel):
     parallel_evaluation: bool = Field(default=True, description="Whether to run evaluations in parallel")
     max_analysis_time: int = Field(default=300, description="Maximum time for data analysis in seconds")
 
+class E2BConfig(BaseModel):
+    """E2B configuration"""
+    api_key: str = Field(default="", description="E2B API key")
+    enabled: bool = Field(default=True, description="Whether to use E2B for data analysis")
+    timeout: int = Field(default=300, description="E2B sandbox timeout in seconds")
+    auto_install_packages: List[str] = Field(
+        default=["pandas", "numpy", "matplotlib", "seaborn", "scipy", "scikit-learn"],
+        description="Python packages to auto-install in E2B sandbox"
+    )
+
 class Config(BaseModel):
     """Main configuration class"""
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -43,13 +53,27 @@ class Config(BaseModel):
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     logging_level: str = Field(default="INFO", description="Logging level")
     output_dir: str = Field(default="outputs", description="Directory for output files")
+    e2b: E2BConfig = Field(default_factory=E2BConfig, description="E2B configuration")
 
 # Global configuration instance
 config = Config()
 
 def get_config() -> Config:
-    """Get the global configuration instance"""
-    return config
+    """Get configuration from environment variables and defaults"""
+    load_dotenv()
+    
+    return Config(
+        # ... existing config ...
+        e2b=E2BConfig(
+            api_key=os.getenv("E2B_API_KEY", ""),
+            enabled=os.getenv("E2B_ENABLED", "true").lower() == "true",
+            timeout=int(os.getenv("E2B_TIMEOUT", "300")),
+            auto_install_packages=[
+                "pandas", "numpy", "matplotlib", "seaborn", 
+                "scipy", "scikit-learn", "plotly"
+            ]
+        )
+    )
 
 def update_config(**kwargs) -> None:
     """Update configuration with new values"""

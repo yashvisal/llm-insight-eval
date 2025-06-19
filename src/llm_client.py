@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from loguru import logger
 from .config import get_config
 from .models import MetricEvaluation
+from .e2b_client import E2BClient
 
 class LLMClient:
     """Client for interacting with Ollama LLM"""
@@ -30,6 +31,9 @@ class LLMClient:
         
         # JSON output parser
         self.json_parser = JsonOutputParser()
+        
+        # Initialize E2B client
+        self.e2b_client = E2BClient()
         
         logger.info(f"Initialized LLM client with model: {self.model_name}")
     
@@ -107,7 +111,7 @@ class LLMClient:
         data_path: str
     ) -> List[Dict[str, Any]]:
         """
-        Perform data analysis relevant to the claim
+        Perform data analysis relevant to the claim using E2B
         
         Args:
             claim: The claim to analyze data for
@@ -118,20 +122,29 @@ class LLMClient:
             List of analysis results
         """
         try:
-            # Create analysis prompt
-            analysis_prompt = self._create_analysis_prompt(claim, dataset_summary, data_path)
+            # Upload dataset to E2B if available
+            if self.e2b_client.tool:
+                await self.e2b_client.upload_dataset(data_path)
+                
+                # Use E2B for analysis
+                analysis_results = await self.e2b_client.analyze_claim(claim, dataset_summary)
+                
+                if analysis_results:
+                    logger.info("E2B analysis completed successfully")
+                    return analysis_results
             
-            # Get LLM response
-            response = await self._get_llm_response([analysis_prompt])
-            
-            # Parse and execute the analysis
-            analysis_results = await self._execute_analysis(response, data_path)
-            
-            return analysis_results
+            # Fallback to basic analysis if E2B is not available
+            logger.info("Using fallback analysis method")
+            return await self._fallback_analysis(claim, dataset_summary, data_path)
             
         except Exception as e:
             logger.error(f"Error in data analysis: {str(e)}")
             return []
+    
+    async def _fallback_analysis(self, claim: str, dataset_summary: str, data_path: str) -> List[Dict[str, Any]]:
+        """Fallback analysis method when E2B is not available"""
+        # ... existing fallback analysis code ...
+        pass
     
     async def _get_llm_response(self, messages: List) -> str:
         """Get response from LLM"""

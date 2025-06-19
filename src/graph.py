@@ -11,6 +11,7 @@ from loguru import logger
 from .models import EvaluationState, EvaluationScores, MetricEvaluation, DataAnalysisResult
 from .llm_client import LLMClient
 from .config import get_config
+from .e2b_client import E2BClient
 
 class EvaluationGraph:
     """Main evaluation workflow using LangGraph"""
@@ -18,6 +19,7 @@ class EvaluationGraph:
     def __init__(self):
         self.config = get_config()
         self.llm_client = LLMClient()
+        self.e2b_client = E2BClient()
         self.graph = self._create_graph()
     
     def _create_graph(self) -> StateGraph:
@@ -61,18 +63,32 @@ class EvaluationGraph:
             return state
     
     async def _data_analysis_node(self, state: EvaluationState) -> EvaluationState:
-        """Node that performs data analysis relevant to the claim"""
-        logger.info("Performing data analysis")
+        """Node that performs data analysis relevant to the claim using E2B"""
+        logger.info("Performing data analysis with E2B")
         
         try:
             start_time = time.time()
             
-            # Perform data analysis
-            analysis_results = await self.llm_client.analyze_data(
-                claim=state.claim,
-                dataset_summary=state.dataset_summary,
-                data_path=self.config.dataset.data_path
-            )
+            # Check if E2B is available
+            if self.e2b_client.tool:
+                logger.info("Using E2B for data analysis")
+                
+                # Upload dataset to E2B
+                await self.e2b_client.upload_dataset(self.config.dataset.data_path)
+                
+                # Perform analysis using E2B
+                analysis_results = await self.e2b_client.analyze_claim(
+                    claim=state.claim,
+                    dataset_summary=state.dataset_summary
+                )
+            else:
+                logger.info("E2B not available, using fallback analysis")
+                # Use existing LLM-based analysis
+                analysis_results = await self.llm_client.analyze_data(
+                    claim=state.claim,
+                    dataset_summary=state.dataset_summary,
+                    data_path=self.config.dataset.data_path
+                )
             
             # Convert to DataAnalysisResult objects
             for result in analysis_results:
