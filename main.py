@@ -9,6 +9,7 @@ from loguru import logger
 from src.graph import EvaluationGraph
 from src.test_data_generator import TestClaimGenerator
 from src.config import get_config
+import os
 
 def setup_logging():
     """Setup logging configuration"""
@@ -123,16 +124,26 @@ def generate_test_dataset():
     logger.info("Test dataset generated successfully!")
 
 def main():
-    """Main entry point"""
+    """Main CLI entry point"""
     parser = argparse.ArgumentParser(description="LLM Insight Evaluation Agent")
-    parser.add_argument("--claim", type=str, help="Claim to evaluate")
-    parser.add_argument("--dataset-summary", type=str, help="Dataset summary")
-    parser.add_argument("--task-description", type=str, help="Task description")
+    parser.add_argument("--claim", required=True, help="Claim to evaluate")
+    parser.add_argument("--dataset-summary", help="Dataset summary")
+    parser.add_argument("--task-description", help="Task description")
+    parser.add_argument("--config", help="Path to config file")
+    parser.add_argument("--e2b-api-key", help="E2B API key")
+    parser.add_argument("--disable-e2b", action="store_true", help="Disable E2B analysis")
     parser.add_argument("--validate", action="store_true", help="Run validation test")
     parser.add_argument("--generate-test-data", action="store_true", help="Generate test dataset")
     parser.add_argument("--num-claims", type=int, default=10, help="Number of test claims for validation")
     
     args = parser.parse_args()
+    
+    # Set E2B API key if provided
+    if args.e2b_api_key:
+        os.environ["E2B_API_KEY"] = args.e2b_api_key
+    
+    if args.disable_e2b:
+        os.environ["E2B_ENABLED"] = "false"
     
     # Setup logging
     setup_logging()
