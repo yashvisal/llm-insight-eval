@@ -1,14 +1,14 @@
 """
 Data models for the LLM Insight Evaluation Agent
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 
 class DataAnalysisResult(BaseModel):
     """Results from data analysis"""
-    stdout: str
-    stderr: str
+    stdout: Union[str, List[str]]
+    stderr: Union[str, List[str]]
     success: bool
     execution_time: float = 0.0
 
