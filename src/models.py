@@ -6,89 +6,37 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 class DataAnalysisResult(BaseModel):
-    """Results from data analysis operations"""
-    analysis_type: str = Field(description="Type of analysis performed")
-    results: Dict[str, Any] = Field(description="Analysis results")
-    code_executed: Optional[str] = Field(default=None, description="Code that was executed")
-    execution_time: float = Field(description="Time taken for analysis in seconds")
-    success: bool = Field(description="Whether the analysis was successful")
-    error_message: Optional[str] = Field(default=None, description="Error message if analysis failed")
+    """Results from data analysis"""
+    stdout: str
+    stderr: str
+    success: bool
+    execution_time: float = 0.0
 
 class MetricEvaluation(BaseModel):
     """Individual metric evaluation result"""
-    score: int = Field(ge=1, le=5, description="Evaluation score from 1-5")
-    rationale: str = Field(description="Explanation for the score")
-    confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Confidence in the evaluation")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-
-class EvaluationScores(BaseModel):
-    """All evaluation scores for a claim"""
-    correctness: MetricEvaluation
-    helpfulness: MetricEvaluation
-    complexity: MetricEvaluation
-    coherence: MetricEvaluation
-    verbosity: MetricEvaluation
-    
-    def get_average_score(self) -> float:
-        """Calculate the average score across all metrics"""
-        scores = [
-            self.correctness.score,
-            self.helpfulness.score,
-            self.complexity.score,
-            self.coherence.score,
-            self.verbosity.score
-        ]
-        return sum(scores) / len(scores)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary format for output"""
-        return {
-            "scores": {
-                "correctness": self.correctness.score,
-                "helpfulness": self.helpfulness.score,
-                "complexity": self.complexity.score,
-                "coherence": self.coherence.score,
-                "verbosity": self.verbosity.score
-            },
-            "explanations": {
-                "correctness": self.correctness.rationale,
-                "helpfulness": self.helpfulness.rationale,
-                "complexity": self.complexity.rationale,
-                "coherence": self.coherence.rationale,
-                "verbosity": self.verbosity.rationale
-            },
-            "average_score": self.get_average_score()
-        }
+    score: int
+    rationale: str
+    metric_name: str
 
 class EvaluationState(BaseModel):
-    """State management for the evaluation workflow"""
+    """State that flows through the LangGraph workflow"""
     # Input data
-    claim: str = Field(description="The claim/insight to evaluate")
-    dataset_summary: str = Field(description="Summary of the dataset")
-    task_description: Optional[str] = Field(default=None, description="Description of the task context")
+    claim: str
+    dataset_info: str
+    dataset_path: str
     
     # Analysis results
-    data_analysis_results: List[DataAnalysisResult] = Field(
-        default_factory=list, 
-        description="Results from data analysis operations"
-    )
+    data_analysis_results: Optional[DataAnalysisResult] = None
     
     # Evaluation results
-    evaluation_scores: Optional[EvaluationScores] = Field(
-        default=None, 
-        description="Evaluation scores for all metrics"
-    )
+    metric_scores: Dict[str, MetricEvaluation] = {}
     
     # Final output
-    final_output: Optional[Dict[str, Any]] = Field(
-        default=None, 
-        description="Final formatted output"
-    )
+    final_output: Optional[Dict[str, Any]] = None
     
     # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now, description="When the evaluation was performed")
-    execution_time: Optional[float] = Field(default=None, description="Total execution time")
-    errors: List[str] = Field(default_factory=list, description="Any errors encountered")
+    timestamp: datetime = datetime.now()
+    errors: List[str] = []
 
 class TestClaim(BaseModel):
     """Test claim with known expected scores"""
