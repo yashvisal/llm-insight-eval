@@ -1,265 +1,114 @@
 # LLM Insight Evaluation Agent
 
-A LangGraph-based agentic system that evaluates the quality of natural language insights or claims generated from structured datasets. Built with privacy-focused open source LLMs via Ollama.
+A system that automatically evaluates the quality and accuracy of data-driven insights using AI. Built for clients who need privacy-focused solutions with open-source language models.
 
-## Features
+## What This Does
 
-- **Multi-metric Evaluation**: Evaluates claims across 5 key metrics (Correctness, Helpfulness, Complexity, Coherence, Verbosity)
-- **Data Analysis Integration**: Performs relevant statistical analysis to support claim evaluation
-- **Parallel Processing**: Runs metric evaluations in parallel for improved performance
-- **Privacy-Focused**: Uses local/open source LLMs via Ollama
-- **Extensible Architecture**: Modular design for easy extension to new datasets and metrics
-- **Validation System**: Built-in test data generation and validation framework
+When someone makes a claim about data (like "The average item weight is 12.5 kg"), this system:
 
-## Architecture
+1. **Analyzes the actual data** to check if the claim is true
+2. **Evaluates the claim quality** across 5 key dimensions
+3. **Provides a detailed assessment** with scores and explanations
 
-The system uses LangGraph to model the evaluation process as a state machine:
+## Key Features
 
-```
-Start → Data Analysis → Evaluate Metrics (Parallel) → Output
-```
+- **Privacy-Focused**: Uses local AI models instead of cloud services
+- **Data-Driven Validation**: Actually analyzes datasets to verify claims
+- **Comprehensive Evaluation**: Scores insights across multiple quality metrics
+- **Extensible**: Can work with different datasets and evaluation criteria
 
-### Components
+## How It Works
 
-- **Start Node**: Validates inputs and prepares for analysis
-- **Data Analysis Node**: Performs relevant statistical analysis on the dataset
-- **Evaluate Metrics Node**: Runs all 5 evaluation metrics in parallel
-- **Output Node**: Aggregates results and formats final output
+The system evaluates claims across 5 dimensions:
 
-## Installation
+1. **Correctness** - Is the claim factually accurate?
+2. **Helpfulness** - Is it useful for decision-making?
+3. **Complexity** - Does it show deep analysis?
+4. **Coherence** - Is it well-structured and clear?
+5. **Verbosity** - Is the level of detail appropriate?
 
-1. **Clone the repository**:
+## Example Output
+
+**Input Claim**: "The average item weight in the Big Mart Sales dataset is around 12.5 kg"
+
+**System Analysis**:
+- ✅ **Data Analysis**: Found actual average = 12.86 kg (very close to claim)
+- ✅ **Evaluation Results**:
+  - Correctness: 3/5 (mostly accurate)
+  - Helpfulness: 5/5 (very useful for business decisions)
+  - Complexity: 1/5 (simple statistical fact)
+  - Coherence: 5/5 (clear and well-structured)
+  - Verbosity: 2/5 (appropriately concise)
+- ✅ **Overall Score**: 3.2/5
+
+## Technical Architecture
+
+Built using:
+- **LangGraph**: For workflow orchestration
+- **Ollama**: For local AI model inference
+- **E2B**: For secure code execution in sandboxed environments
+- **Python**: Core implementation language
+
+## Business Value
+
+This system addresses a critical need in data-driven organizations:
+
+- **Quality Control**: Ensures insights are accurate and valuable
+- **Privacy Compliance**: Keeps sensitive data local
+- **Scalability**: Can evaluate insights automatically
+- **Transparency**: Provides detailed reasoning for each evaluation
+
+## Use Cases
+
+- **Business Intelligence**: Validating data insights before presentation
+- **Research**: Quality control for data analysis reports
+- **Consulting**: Ensuring client deliverables meet quality standards
+- **Education**: Teaching data literacy and critical thinking
+
+## Project Status
+
+✅ **Core functionality complete**
+- Data analysis integration working
+- Multi-metric evaluation system operational
+- Privacy-focused architecture implemented
+- End-to-end workflow functional
+
+🔄 **Next steps**
+- Create comprehensive test dataset
+- Optimize performance for production use
+- Extend to additional datasets and domains
+
+## Installation & Setup
+
 ```bash
-git clone <repository-url>
-cd llm-insight-eval
-```
-
-2. **Install dependencies**:
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Install Ollama (for local AI models)
+# Download from https://ollama.ai/
+
+# Pull a model
+ollama pull llama3.2:3b
+
+# Run evaluation
+python test_e2b_integration.py
 ```
 
-3. **Install and setup Ollama**:
-```bash
-# Install Ollama (https://ollama.ai/)
-# Then pull a model:
-ollama pull llama3.2
-```
+## Files Overview
 
-4. **Verify setup**:
-```bash
-python main.py --claim "Items with higher MRP tend to have higher sales."
-```
+- `src/graph.py` - Main evaluation workflow
+- `src/metric_evaluator.py` - Quality assessment logic
+- `src/llm_client.py` - AI model integration
+- `test_e2b_integration.py` - Main test script
+- `data/train.csv` - Sample dataset (Big Mart Sales)
 
-## Usage
+## Results
 
-### Command Line Interface
+The system successfully:
+- ✅ Analyzed real-world retail data
+- ✅ Generated accurate statistical insights
+- ✅ Evaluated claim quality across multiple dimensions
+- ✅ Provided detailed, actionable feedback
+- ✅ Maintained data privacy throughout the process
 
-**Evaluate a single claim**:
-```bash
-python main.py --claim "Items with higher MRP tend to have higher sales."
-```
-
-**With custom dataset summary**:
-```bash
-python main.py --claim "Your claim here" --dataset-summary "Your dataset description"
-```
-
-**Run validation tests**:
-```bash
-python main.py --validate --num-claims 20
-```
-
-**Generate test dataset**:
-```bash
-python main.py --generate-test-data
-```
-
-### Interactive Mode
-
-Run without arguments for interactive mode:
-```bash
-python main.py
-```
-
-### Programmatic Usage
-
-```python
-from src.graph import EvaluationGraph
-import asyncio
-
-async def evaluate_claim():
-    graph = EvaluationGraph()
-    result = await graph.evaluate_claim(
-        claim="Items with higher MRP tend to have higher sales.",
-        dataset_summary="Big Mart Sales dataset with 8,523 records",
-        task_description="Retail analytics for pricing optimization"
-    )
-    print(result)
-
-asyncio.run(evaluate_claim())
-```
-
-## Configuration
-
-Edit `src/config.py` to customize:
-
-- **LLM Settings**: Model name, temperature, timeout
-- **Dataset Settings**: Data path, description
-- **Evaluation Settings**: Metrics, parallel processing, score ranges
-
-### Environment Variables
-
-Create a `.env` file for sensitive configuration:
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
-```
-
-## Evaluation Metrics
-
-1. **Correctness** (1-5): Factual alignment with data
-2. **Helpfulness** (1-5): Usefulness and actionability
-3. **Complexity** (1-5): Depth and novelty of reasoning
-4. **Coherence** (1-5): Clarity and logical flow
-5. **Verbosity** (1-5): Appropriate level of detail
-
-## Output Format
-
-```json
-{
-  "claim": "Items with higher MRP tend to have higher sales.",
-  "scores": {
-    "correctness": 5,
-    "helpfulness": 4,
-    "complexity": 3,
-    "coherence": 5,
-    "verbosity": 4
-  },
-  "explanations": {
-    "correctness": "Strong positive correlation found in data analysis.",
-    "helpfulness": "Useful for pricing optimization strategies.",
-    "complexity": "Basic but correct statistical relationship.",
-    "coherence": "Clear and well-structured claim.",
-    "verbosity": "Appropriate level of detail."
-  },
-  "average_score": 4.2,
-  "data_analysis_summary": "✓ statistical_analysis: Correlation analysis performed...",
-  "timestamp": "2024-01-15T10:30:00",
-  "execution_time": 12.5
-}
-```
-
-## Project Structure
-
-```
-llm-insight-eval/
-├── src/
-│   ├── __init__.py
-│   ├── config.py          # Configuration management
-│   ├── models.py          # Data models and state
-│   ├── llm_client.py      # LLM integration
-│   ├── graph.py           # LangGraph workflow
-│   └── test_data_generator.py  # Test data generation
-├── prompts/
-│   └── metrics.py         # Evaluation prompt templates
-├── data/
-│   └── train.csv          # Big Mart Sales dataset
-├── main.py                # Main entry point
-├── requirements.txt       # Dependencies
-└── README.md
-```
-
-## Development
-
-### Adding New Metrics
-
-1. Add metric prompt to `prompts/metrics.py`
-2. Update `src/models.py` EvaluationScores class
-3. Add metric to configuration in `src/config.py`
-
-### Extending to New Datasets
-
-1. Update dataset configuration in `src/config.py`
-2. Modify dataset summary in `src/graph.py`
-3. Update test data generator patterns
-
-### Custom LLM Integration
-
-Replace `src/llm_client.py` with your preferred LLM client while maintaining the same interface.
-
-## Testing
-
-### Validation Framework
-
-The system includes a comprehensive validation framework:
-
-1. **Generate test data**:
-```bash
-python main.py --generate-test-data
-```
-
-2. **Run validation**:
-```bash
-python main.py --validate --num-claims 50
-```
-
-3. **Review results**:
-- Check `validation_results.json` for detailed results
-- Review accuracy metrics and individual test cases
-
-### Test Data Categories
-
-- **Correct Claims**: Factually accurate with expected scores 4-5
-- **Partial Claims**: Partially correct with expected scores 2-3
-- **Incorrect Claims**: Factually wrong with expected scores 1-2
-
-## Performance
-
-- **Typical evaluation time**: 10-30 seconds per claim
-- **Parallel metric evaluation**: Reduces total time by ~60%
-- **Data analysis overhead**: 5-15 seconds depending on claim complexity
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Ollama not running**:
-   ```bash
-   ollama serve
-   ```
-
-2. **Model not found**:
-   ```bash
-   ollama pull llama3.2
-   ```
-
-3. **Import errors**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-### Logs
-
-Check `logs/evaluation.log` for detailed execution logs.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-[Your License Here]
-
-## Roadmap
-
-- [ ] Web interface for easy interaction
-- [ ] Support for more LLM providers
-- [ ] Advanced statistical analysis capabilities
-- [ ] Custom metric definitions
-- [ ] Batch processing for multiple claims
-- [ ] Integration with data visualization tools
+This demonstrates a working solution for automated insight quality assessment using modern AI techniques while respecting privacy and security requirements.
