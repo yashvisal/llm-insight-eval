@@ -99,6 +99,7 @@ class EvaluationGraph:
                 # Get results
                 stdout = execution.logs.stdout
                 stderr = execution.logs.stderr
+                
                 success = not bool(stderr)
                 
             # Create analysis result
@@ -122,8 +123,8 @@ class EvaluationGraph:
             # Create error result
             from .models import DataAnalysisResult
             state.data_analysis_results = DataAnalysisResult(
-                stdout="",
-                stderr=str(e),
+                stdout=[],
+                stderr=[str(e)],
                 success=False,
                 execution_time=0.0
             )
@@ -131,8 +132,8 @@ class EvaluationGraph:
         return state
     
     async def _evaluate_metrics_node(self, state: EvaluationState) -> EvaluationState:
-        """Node that evaluates all metrics in parallel"""
-        logger.info("Evaluating metrics")
+        """Node that evaluates all metrics using LangChain parallelization"""
+        logger.info("Evaluating metrics in parallel")
         
         # Check if data analysis was successful before proceeding
         if not state.data_analysis_results or not state.data_analysis_results.success:
@@ -152,21 +153,17 @@ class EvaluationGraph:
             # Prepare context for metric evaluation
             analysis_summary = f"Data Analysis Results:\n{state.data_analysis_results.stdout}"
             
-            # Define metrics to evaluate
-            metrics = ["correctness", "helpfulness", "complexity", "coherence", "verbosity"]
+            # Use LangChain parallel evaluation
+            metric_results = await self.metric_evaluator.evaluate_all_metrics(
+                claim=state.claim,
+                dataset_info=state.dataset_info,
+                analysis_results=analysis_summary
+            )
             
-            # Evaluate each metric
-            for metric in metrics:
-                metric_result = await self.metric_evaluator.evaluate_metric(
-                    claim=state.claim,
-                    dataset_info=state.dataset_info,
-                    analysis_results=analysis_summary,
-                    metric_name=metric
-                )
-                
-                state.metric_scores[metric] = metric_result
+            # Update state with results
+            state.metric_scores = metric_results
             
-            logger.info("Metrics evaluation completed")
+            logger.info("Parallel metrics evaluation completed")
             
         except Exception as e:
             logger.error(f"Error in metrics evaluation: {str(e)}")
@@ -192,6 +189,14 @@ class EvaluationGraph:
         
         average_score = total_score / metric_count if metric_count > 0 else 0
         
+        # Handle stdout formatting properly
+        data_analysis_summary = None
+        if state.data_analysis_results and state.data_analysis_results.stdout:
+            if isinstance(state.data_analysis_results.stdout, list):
+                data_analysis_summary = '\n'.join(state.data_analysis_results.stdout)
+            else:
+                data_analysis_summary = state.data_analysis_results.stdout
+        
         # Create final output
         final_output = {
             "claim": state.claim,
@@ -201,7 +206,7 @@ class EvaluationGraph:
             "scores": scores,
             "explanations": explanations,
             "average_score": round(average_score, 2),
-            "data_analysis_summary": '\n'.join(state.data_analysis_results.stdout) if state.data_analysis_results and state.data_analysis_results.stdout else None,
+            "data_analysis_summary": data_analysis_summary,
             "errors": state.errors if state.errors else []
         }
         
